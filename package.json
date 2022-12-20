@@ -1,22 +1,16 @@
 {
-  "name": "gbnode",
+  "name": "2",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/redman1922/GbNode.git"
-  },
+  "type": "module",
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/redman1922/GbNode/issues"
-  },
-  "homepage": "https://github.com/redman1922/GbNode#readme",
   "dependencies": {
     "colors": "^1.4.0"
   }
