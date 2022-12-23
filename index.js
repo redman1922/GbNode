@@ -1,35 +1,74 @@
-
-import fs from "fs";
+import colors from "colors";
 import readline from "readline";
+import path from "path";
+import inquirer from "inquirer";
+import fsp from "fs/promises";
 
-console.log("Hello World!");
-
-//создание потока для чтения файла
-const readStream = fs.createReadStream("./access.log", "utf-8");
-const ip1 = "89.123.1.41";
-const ip2 = "34.48.240.111";
-
-//создание стримов для записи по нужному ip
-const writeStream1 = fs.createWriteStream(`${ip1}`);
-const writeStream2 = fs.createWriteStream(`${ip2}`);
-
-//создание переменной для подсчета строк
-let numStr = 0;
+console.log(colors.red("Hello World!"));
 
 const rl = readline.createInterface({
-    input: readStream,
+    input: process.stdin,
+    output: process.stdout,
 });
 
-rl.on("line", line => {
-    //проверка каждой строки файла
-    if (line.includes(ip1)) {
-        //запись в файл
-        writeStream1.write(line + "\n");
-    }
+const root = process.cwd();
 
-    if (line.includes(ip2)) {
-        writeStream2.write(line + "\n");
+const findFilesInDir = dirName => {
+    //читаем список файлов и директорий
+    return fsp
+        .readdir(dirName)
+        .then(choices => {
+            return inquirer.prompt([
+                { name: "fileName", type: "list", message: "Choose file", choices },
+                {
+                    name: "findString",
+                    type: "input",
+                    message: "Enter something for search",
+                    //асинхронная функция проверки на файл или директорию
+                    async when({ fileName }) {
+                        const fullPath = path.join(dirName, fileName);
+                        const stat = await fsp.stat(fullPath);
+
+                        return stat.isFile();
+                    },
+                },
+            ]);
+        })
+        .then(async ({ fileName, findString }) => {
+            const fullPath = path.join(dirName, fileName);
+            if (findString === undefined) return findFilesInDir(fullPath);
+
+            return Promise.all([
+                fsp.readFile(fullPath, "utf-8"),
+                Promise.resolve(findString),
+            ]);
+        })
+        .then(result => {
+            if (result) {
+                const [text, findString] = result;
+                const pattern = new RegExp(findString, "g");
+                let count = 0; // для подсчета совпадений
+
+                //вывод текста заменяем строки на выделенные красным цветом
+                const out = text.replace(pattern, () => {
+                    count++;
+                    //помечаем красным цветом совпадения
+                    return colors.red(findString);
+                });
+
+                console.log(out, "\n", colors.green(`Found ${count} values`));
+            }
+        });
+};
+
+//точка входа
+rl.question(
+    `You are in ${root} \n Please enter the path to the directory: `,
+    dirPath => {
+        const dirName = path.join(root, dirPath);
+
+        findFilesInDir(dirName);
     }
-    //вывод количества считанных строк в лог
-    console.log(++numStr);
-});
+);
+
+rl.on("close", () => process.exit(0));
